@@ -1,0 +1,3 @@
+real/real_01.wav
+real/real_02.wav
+fake/fake_01.wav

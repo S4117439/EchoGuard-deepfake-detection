@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.pyc
+artifacts/X.npy
+artifacts/y.npy
+artifacts/echoguard_model.pkl
+temp.wav

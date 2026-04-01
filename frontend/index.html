@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoGuard - Deepfake Audio Detection</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Poppins", sans-serif;
+            background: linear-gradient(135deg, #fce4ec, #e1bee7, #bbdefb);
+            min-height: 100vh;
+            color: #2d1148;
+        }
+
+        .banner {
+            width: 100%;
+            padding: 22px 16px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(8px);
+            text-align: center;
+            font-size: 34px;
+            font-weight: 700;
+            color: #4a148c;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .subtitle {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #6a1b9a;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .soundwave {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 25px;
+        }
+
+        .bar {
+            width: 6px;
+            height: 20px;
+            background: #6a1b9a;
+            border-radius: 4px;
+            animation: bounce 1.2s infinite ease-in-out;
+        }
+
+        .bar:nth-child(2) { animation-delay: 0.1s; height: 30px; }
+        .bar:nth-child(3) { animation-delay: 0.2s; height: 40px; }
+        .bar:nth-child(4) { animation-delay: 0.3s; height: 30px; }
+        .bar:nth-child(5) { animation-delay: 0.4s; height: 20px; }
+
+        @keyframes bounce {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.8); }
+        }
+
+        .page-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        .hero-text {
+            text-align: center;
+            max-width: 850px;
+            margin: 0 auto 30px;
+            line-height: 1.7;
+            color: #512a73;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 28px;
+            border-radius: 18px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+
+        .card h2, .card h3 {
+            margin-top: 0;
+            color: #3f136d;
+        }
+
+        .upload-zone {
+            border: 2px dashed #b39ddb;
+            border-radius: 14px;
+            padding: 24px;
+            background: #faf7ff;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .upload-zone p {
+            margin: 8px 0;
+            color: #6a1b9a;
+        }
+
+        input[type="file"] {
+            margin-top: 10px;
+            max-width: 100%;
+        }
+
+        button {
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: #7e57c2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            background: #6a1b9a;
+        }
+
+        button:disabled {
+            background: #b39ddb;
+            cursor: not-allowed;
+        }
+
+        .secondary-button {
+            background: #ede7f6;
+            color: #5e35b1;
+            margin-left: 10px;
+        }
+
+        .secondary-button:hover {
+            background: #d1c4e9;
+        }
+
+        .file-meta,
+        .status-box,
+        .result-box,
+        .features-box,
+        .history-box,
+        .info-box {
+            margin-top: 18px;
+            padding: 18px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.72);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .status-box {
+            font-size: 15px;
+            color: #5e35b1;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 7px 16px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .real {
+            background: #c8e6c9;
+            color: #256029;
+        }
+
+        .fake {
+            background: #ffcdd2;
+            color: #b71c1c;
+        }
+
+        .uncertain {
+            background: #fff3cd;
+            color: #8a6d3b;
+        }
+
+        .confidence-container {
+            width: 100%;
+            background: #eee;
+            border-radius: 10px;
+            height: 12px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #9575cd, #7e57c2);
+            width: 0%;
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+
+        .result-grid,
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .metric {
+            padding: 12px;
+            background: #f6f1fb;
+            border-radius: 10px;
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: #6d5a85;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #34124f;
+        }
+
+        .explanation-list {
+            margin-top: 14px;
+            text-align: left;
+            padding-left: 18px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 14px;
+        }
+
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 12px;
+            color: #4a148c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        table th,
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #e6dff1;
+            text-align: left;
+        }
+
+        table th {
+            color: #5e35b1;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #6d5a85;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="banner">EchoGuard</div>
+    <div class="subtitle">Audio Deepfake Detection System</div>
+
+    <div class="soundwave" aria-hidden="true">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+    </div>
+
+    <div class="page-wrapper">
+        <div class="hero-text">
+            EchoGuard analyses uploaded audio samples to determine whether speech is likely authentic or synthetically generated.
+            The system is designed as an AI-assisted forensic screening tool, combining acoustic feature extraction with machine learning-based classification.
+        </div>
+
+        <div class="main-grid">
+            <!-- Left side -->
+            <div class="card">
+                <h2>Upload Audio</h2>
+
+                <div class="upload-zone">
+                    <p><strong>Select an audio sample for analysis</strong></p>
+                    <p>Supported formats: WAV, MP3, FLAC, M4A</p>
+                    <input type="file" id="audioFile" accept="audio/*">
+                </div>
+
+                <div id="fileMeta" class="file-meta hidden"></div>
+
+                <audio id="audioPreview" class="hidden" controls></audio>
+
+                <div>
+                    <button id="analyseBtn" onclick="analyseAudio()">Analyse Audio</button>
+                    <button class="secondary-button" onclick="clearAnalysis()">Clear</button>
+                </div>
+
+                <div id="statusBox" class="status-box hidden"></div>
+
+                <div class="footer-note">
+                    This tool provides a classification-based assessment and should be interpreted as decision support rather than absolute proof of authenticity.
+                </div>
+            </div>
+
+            <!-- Right side -->
+            <div class="card">
+                <h2>Analysis Result</h2>
+
+                <div id="emptyState" class="info-box">
+                    No analysis has been run yet. Upload an audio file and click <strong>Analyse Audio</strong> to view the prediction, confidence level, and technical summary.
+                </div>
+
+                <div id="resultContainer" class="result-box hidden">
+                    <div id="resultBadge" class="badge">Result</div>
+                    <div id="resultText" style="font-size: 20px; font-weight: 700; color: #34124f;"></div>
+                    <div id="confidenceText" style="margin-top: 10px;"></div>
+
+                    <div class="confidence-container">
+                        <div class="confidence-bar" id="confBar"></div>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="metric">
+                            <div class="metric-label">Predicted Class</div>
+                            <div class="metric-value" id="predictedClass">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Risk Level</div>
+                            <div class="metric-value" id="riskLevel">-</div>
+                        </div>
+                    </div>
+
+                    <ul id="explanationList" class="explanation-list"></ul>
+                </div>
+
+                <div id="featureBox" class="features-box hidden">
+                    <h3>Technical Summary</h3>
+                    <div class="feature-grid">
+                        <div class="metric">
+                            <div class="metric-label">Filename</div>
+                            <div class="metric-value" id="featFilename">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">File Size</div>
+                            <div class="metric-value" id="featFilesize">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Sample Rate</div>
+                            <div class="metric-value" id="featSampleRate">-</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Duration</div>
+                            <div class="metric-value" id="featDuration">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">How It Works</h2>
+        <div class="card">
+            <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                <li>The user uploads an audio sample through the frontend interface.</li>
+                <li>The backend extracts acoustic features from the audio signal.</li>
+                <li>A trained machine learning model evaluates whether the speech is more likely real or AI-generated.</li>
+                <li>The system returns a prediction, confidence score, and an explanation summary to support interpretation.</li>
+            </ol>
+        </div>
+
+        <h2 class="section-title">Recent Analyses</h2>
+        <div class="card history-box">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>Prediction</th>
+                        <th>Confidence</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr>
+                        <td colspan="4">No analyses recorded yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById("audioFile");
+        const audioPreview = document.getElementById("audioPreview");
+        const fileMeta = document.getElementById("fileMeta");
+        const statusBox = document.getElementById("statusBox");
+        const analyseBtn = document.getElementById("analyseBtn");
+        const emptyState = document.getElementById("emptyState");
+        const resultContainer = document.getElementById("resultContainer");
+        const featureBox = document.getElementById("featureBox");
+        const historyBody = document.getElementById("historyBody");
+
+        fileInput.addEventListener("change", handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+
+            resetPreviewOnly();
+
+            if (!file) return;
+
+            const allowedTypes = [
+                "audio/wav",
+                "audio/x-wav",
+                "audio/mpeg",
+                "audio/mp3",
+                "audio/flac",
+                "audio/x-flac",
+                "audio/mp4",
+                "audio/x-m4a",
+                "audio/aac",
+                "audio/ogg"
+            ];
+
+            if (!allowedTypes.includes(file.type) && file.type !== "") {
+                showStatus("Unsupported file type. Please upload a WAV, MP3, FLAC, M4A, AAC, or OGG file.", true);
+                fileInput.value = "";
+                return;
+            }
+
+            const fileUrl = URL.createObjectURL(file);
+            audioPreview.src = fileUrl;
+            audioPreview.classList.remove("hidden");
+
+            fileMeta.classList.remove("hidden");
+            fileMeta.innerHTML = `
+                <strong>Selected File:</strong> ${file.name}<br>
+                <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+                <strong>Type:</strong> ${file.type || "Unknown"}
+            `;
+
+            showStatus("Audio file ready for analysis.", false);
+
+            audioPreview.onloadedmetadata = () => {
+                document.getElementById("featDuration").textContent = `${audioPreview.duration.toFixed(2)} sec`;
+            };
+        }
+
+        async function analyseAudio() {
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showStatus("Please upload a file first.", true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("audio", file);
+
+            analyseBtn.disabled = true;
+            analyseBtn.textContent = "Analysing...";
+            showStatus("Uploading audio and running model inference...", false);
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/predict", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json().catch(() => null);
+
+                if (!response.ok) {
+                    const message = data && data.error ? data.error : "Request failed.";
+                    showStatus("Error: " + message, true);
+                    return;
+                }
+
+                if (!data) {
+                    showStatus("Invalid server response received.", true);
+                    return;
+                }
+
+                renderResult(data, file);
+                showStatus("Analysis completed successfully.", false);
+
+            } catch (error) {
+                showStatus("Error analysing audio. Make sure the Flask server is running on http://127.0.0.1:5000.", true);
+            } finally {
+                analyseBtn.disabled = false;
+                analyseBtn.textContent = "Analyse Audio";
+            }
+        }
+
+        function renderResult(data, file) {
+            emptyState.classList.add("hidden");
+            resultContainer.classList.remove("hidden");
+            featureBox.classList.remove("hidden");
+
+           const predictionValue = Number(data.prediction);
+            const confidence = Number(data.confidence || 0);
+            const confidencePercent = (confidence * 100).toFixed(2);
+
+            let labelText = "Uncertain";
+            let badgeClass = "uncertain";
+            let riskText = "Moderate";
+
+            if (predictionValue === 1) {
+                labelText = "Likely AI-Generated";
+                badgeClass = "badge fake";
+                riskText = confidence >= 0.8 ? "High" : "Moderate";
+            } else if (predictionValue === 0) {
+                labelText = "Likely Authentic";
+                badgeClass = "badge real";
+                riskText = confidence >= 0.8 ? "Low" : "Moderate";
+            }
+
+            const resultBadge = document.getElementById("resultBadge");
+            resultBadge.className = badgeClass;
+            resultBadge.textContent = labelText;
+
+            document.getElementById("resultText").textContent = labelText;
+            document.getElementById("confidenceText").textContent = `Confidence Score: ${confidencePercent}%`;
+            document.getElementById("predictedClass").textContent = predictionValue === 1 ? "AI / Fake" : "Human / Real";
+            document.getElementById("riskLevel").textContent = riskText;
+
+            const confBar = document.getElementById("confBar");
+            confBar.style.width = "0%";
+            setTimeout(() => {
+                confBar.style.width = confidencePercent + "%";
+            }, 100);
+
+            const explanationList = document.getElementById("explanationList");
+            explanationList.innerHTML = "";
+
+            if (Array.isArray(data.explanation) && data.explanation.length > 0) {
+                data.explanation.forEach(item => {
+                    const li = document.createElement("li");
+                    li.textContent = item;
+                    explanationList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement("li");
+                li.textContent = "No explanation details were returned by the backend.";
+                explanationList.appendChild(li);
+            }
+
+            document.getElementById("featFilename").textContent = file.name;
+            document.getElementById("featFilesize").textContent = formatFileSize(file.size);
+            document.getElementById("featSampleRate").textContent = data.sample_rate ? `${data.sample_rate} Hz` : "Not provided";
+            document.getElementById("featDuration").textContent = data.duration ? `${data.duration} sec` : document.getElementById("featDuration").textContent;
+
+            addHistoryRow(file.name, labelText, `${confidencePercent}%`);
+        }
+
+        function addHistoryRow(filename, prediction, confidence) {
+            const now = new Date();
+            const timeString = now.toLocaleString();
+
+            if (historyBody.children.length === 1 && historyBody.children[0].children.length === 1) {
+                historyBody.innerHTML = "";
+            }
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${filename}</td>
+                <td>${prediction}</td>
+                <td>${confidence}</td>
+                <td>${timeString}</td>
+            `;
+
+            historyBody.prepend(row);
+        }
+
+        function clearAnalysis() {
+            fileInput.value = "";
+            audioPreview.src = "";
+            audioPreview.classList.add("hidden");
+            fileMeta.classList.add("hidden");
+            fileMeta.innerHTML = "";
+            statusBox.classList.add("hidden");
+            statusBox.textContent = "";
+
+            emptyState.classList.remove("hidden");
+            resultContainer.classList.add("hidden");
+            featureBox.classList.add("hidden");
+
+            document.getElementById("confBar").style.width = "0%";
+            document.getElementById("featDuration").textContent = "-";
+        }
+
+        function resetPreviewOnly() {
+            statusBox.classList.add("hidden");
+            statusBox.textContent = "";
+        }
+
+        function showStatus(message, isError) {
+            statusBox.classList.remove("hidden");
+            statusBox.textContent = message;
+            statusBox.style.color = isError ? "#b71c1c" : "#5e35b1";
+            statusBox.style.background = isError ? "#ffebee" : "rgba(255,255,255,0.72)";
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+    </script>
+</body>
+</html>
