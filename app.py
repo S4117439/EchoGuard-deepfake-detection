@@ -25,9 +25,9 @@ def generate_explanation(features, prediction, confidence):
     mean_value = float(flat_features.mean())
 
     if variance < 50:
-        explanation.append("Low MFCC variance was detected, which can be associated with synthetic or overly uniform speech patterns.")
+        explanation.append("Low feature variance was detected, which can be associated with synthetic or overly uniform speech patterns.")
     else:
-        explanation.append("The extracted MFCC profile shows a more varied acoustic pattern, which is more typical of natural human speech.")
+        explanation.append("The extracted acoustic profile shows more varied patterns, which is more typical of natural human speech.")
 
     if confidence >= 0.85:
         explanation.append("The model produced a high-confidence classification for this sample.")
@@ -48,6 +48,8 @@ def generate_explanation(features, prediction, confidence):
 
 @app.route("/predict", methods=["POST"])
 def predict_route():
+    print("Received /predict request")
+
     if "audio" not in request.files:
         return jsonify({"error": "No audio file uploaded."}), 400
 
@@ -89,7 +91,7 @@ def predict_route():
         })
 
     except Exception as e:
-        print("ERROR:", e)
+        print("ERROR IN /predict:", e)
         return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
 
     finally:

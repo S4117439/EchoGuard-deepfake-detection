@@ -310,13 +310,12 @@
         </div>
 
         <div class="main-grid">
-            <!-- Left side -->
             <div class="card">
                 <h2>Upload Audio</h2>
 
                 <div class="upload-zone">
                     <p><strong>Select an audio sample for analysis</strong></p>
-                    <p>Supported formats: WAV, MP3, FLAC, M4A</p>
+                    <p>Supported formats: WAV, MP3, FLAC, M4A, AAC, OGG</p>
                     <input type="file" id="audioFile" accept="audio/*">
                 </div>
 
@@ -336,7 +335,6 @@
                 </div>
             </div>
 
-            <!-- Right side -->
             <div class="card">
                 <h2>Analysis Result</h2>
 
@@ -436,29 +434,9 @@
 
         function handleFileSelect() {
             const file = fileInput.files[0];
-
             resetPreviewOnly();
 
             if (!file) return;
-
-            const allowedTypes = [
-                "audio/wav",
-                "audio/x-wav",
-                "audio/mpeg",
-                "audio/mp3",
-                "audio/flac",
-                "audio/x-flac",
-                "audio/mp4",
-                "audio/x-m4a",
-                "audio/aac",
-                "audio/ogg"
-            ];
-
-            if (!allowedTypes.includes(file.type) && file.type !== "") {
-                showStatus("Unsupported file type. Please upload a WAV, MP3, FLAC, M4A, AAC, or OGG file.", true);
-                fileInput.value = "";
-                return;
-            }
 
             const fileUrl = URL.createObjectURL(file);
             audioPreview.src = fileUrl;
@@ -502,7 +480,7 @@
                 const data = await response.json().catch(() => null);
 
                 if (!response.ok) {
-                    const message = data && data.error ? data.error : "Request failed.";
+                    const message = data && data.error ? data.error : `Request failed with status ${response.status}`;
                     showStatus("Error: " + message, true);
                     return;
                 }
@@ -516,7 +494,8 @@
                 showStatus("Analysis completed successfully.", false);
 
             } catch (error) {
-                showStatus("Error analysing audio. Make sure the Flask server is running on http://127.0.0.1:5000.", true);
+                console.error("Analysis error:", error);
+                showStatus(`Error analysing audio: ${error.message}`, true);
             } finally {
                 analyseBtn.disabled = false;
                 analyseBtn.textContent = "Analyse Audio";
@@ -528,12 +507,12 @@
             resultContainer.classList.remove("hidden");
             featureBox.classList.remove("hidden");
 
-           const predictionValue = Number(data.prediction);
+            const predictionValue = Number(data.prediction);
             const confidence = Number(data.confidence || 0);
             const confidencePercent = (confidence * 100).toFixed(2);
 
             let labelText = "Uncertain";
-            let badgeClass = "uncertain";
+            let badgeClass = "badge uncertain";
             let riskText = "Moderate";
 
             if (predictionValue === 1) {

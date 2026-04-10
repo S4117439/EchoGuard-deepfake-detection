@@ -17,18 +17,28 @@ model = load_model()
 
 def extract_features(file_path, n_mfcc=20):
     try:
-        audio, sr = librosa.load(file_path, sr=16000)
+        y, sr = librosa.load(file_path, sr=16000)
 
-        if audio is None or len(audio) == 0:
+        if y is None or len(y) == 0:
             raise ValueError("Uploaded audio file is empty or unreadable.")
 
-        duration = librosa.get_duration(y=audio, sr=sr)
+        duration = librosa.get_duration(y=y, sr=sr)
 
-        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=n_mfcc)
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
         mfcc_mean = np.mean(mfcc, axis=1)
         mfcc_std = np.std(mfcc, axis=1)
 
-        features = np.concatenate((mfcc_mean, mfcc_std)).astype(np.float32)
+        centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
+        bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr))
+        rolloff = np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr))
+        rms = np.mean(librosa.feature.rms(y=y))
+        zcr = np.mean(librosa.feature.zero_crossing_rate(y))
+
+        features = np.concatenate([
+            mfcc_mean,
+            mfcc_std,
+            [centroid, bandwidth, rolloff, rms, zcr]
+        ]).astype(np.float32)
 
         return {
             "features": features.reshape(1, -1),
@@ -58,7 +68,6 @@ def predict_audio(file_path):
 
         probabilities = model.predict_proba(features)[0]
         classes = model.classes_
-
         class_index = list(classes).index(prediction)
         confidence = float(probabilities[class_index])
 

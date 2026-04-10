@@ -1,0 +1,2 @@
+real/.DS_Store - skipped (unsupported extension)
+fake/.DS_Store - skipped (unsupported extension)
