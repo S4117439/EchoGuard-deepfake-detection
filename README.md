@@ -26,3 +26,15 @@ It allows users to upload audio files and receive a prediction (real or AI-gener
 ---
 
 ## Project Structure
+
+## Screenshots
+
+### Real Audio Detection
+The system correctly classified a real human speech sample as authentic.
+
+![Real Audio Result](screenshots/real_results.png)
+
+### Fake Audio Detection
+The system correctly classified an AI-generated speech sample as synthetic.
+
+![Fake Audio Result](screenshots/fake_results.png)
